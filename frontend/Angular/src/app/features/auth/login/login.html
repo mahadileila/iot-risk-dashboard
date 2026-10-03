@@ -1,0 +1,41 @@
+<div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+
+  <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm">
+
+    <div class="flex flex-col items-center mb-6">
+      <div class="w-12 h-12 rounded-full bg-blue-600 mb-3"></div>
+      <h1 class="text-xl font-semibold text-gray-900">Privacy risk dashboard</h1>
+      <p class="text-sm text-gray-500">Smart building devices</p>
+    </div>
+
+    @if (error) {
+      <p class="text-red-600 text-sm mb-4 text-center">{{ error }}</p>
+    }
+
+    <label class="block text-sm text-gray-600 mb-1">Username</label>
+    <input
+      [(ngModel)]="username"
+      (keyup.enter)="submit()"
+      class="w-full border border-gray-300 rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      placeholder="e.g. admin"
+    />
+
+    <label class="block text-sm text-gray-600 mb-1">Password</label>
+    <input
+      type="password"
+      [(ngModel)]="password"
+      (keyup.enter)="submit()"
+      class="w-full border border-gray-300 rounded-md px-3 py-2 mb-6 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+
+    <button
+      (click)="submit()"
+      [disabled]="loading"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
+    >
+      {{ loading ? 'Logging in...' : 'Log in' }}
+    </button>
+
+  </div>
+
+</div>
