@@ -1,0 +1,56 @@
+<div class="flex h-screen bg-gray-50">
+  @if (mobileMenuOpen) {
+    <div class="fixed inset-0 bg-black/40 z-20 md:hidden" (click)="closeMobileMenu()"></div>
+  }
+
+  <aside
+    class="fixed z-30 inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col transition-transform duration-200 md:static md:translate-x-0"
+    [class.-translate-x-full]="!mobileMenuOpen"
+  >
+    <div class="flex items-center gap-2 px-4 py-4 border-b border-slate-800">
+      <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold">R</div>
+      <span class="font-semibold">RiskGuard IoT</span>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto px-2 py-4 text-sm">
+      <p class="px-2 text-xs uppercase text-slate-500 mb-2">Overview</p>
+      <a routerLink="/dashboard" routerLinkActive="bg-blue-600" (click)="closeMobileMenu()"
+         class="block px-2 py-2 rounded-md hover:bg-slate-800">Dashboard</a>
+
+      <p class="px-2 text-xs uppercase text-slate-500 mt-6 mb-2">Asset Management</p>
+      <a routerLink="/devices" routerLinkActive="bg-blue-600" (click)="closeMobileMenu()"
+         class="block px-2 py-2 rounded-md hover:bg-slate-800">Devices</a>
+      <a routerLink="/device-types" routerLinkActive="bg-blue-600" (click)="closeMobileMenu()"
+         class="block px-2 py-2 rounded-md hover:bg-slate-800">Device Types</a>
+      <a routerLink="/subsystems" routerLinkActive="bg-blue-600" (click)="closeMobileMenu()"
+         class="block px-2 py-2 rounded-md hover:bg-slate-800">BMS Subsystems</a>
+
+      <p class="px-2 text-xs uppercase text-slate-500 mt-6 mb-2">Risk Configuration</p>
+      <a routerLink="/risk-factors" routerLinkActive="bg-blue-600" (click)="closeMobileMenu()"
+         class="block px-2 py-2 rounded-md hover:bg-slate-800">Risk Factors</a>
+      <a routerLink="/risk-classifications" routerLinkActive="bg-blue-600" (click)="closeMobileMenu()"
+         class="block px-2 py-2 rounded-md hover:bg-slate-800">Risk Classifications</a>
+    </nav>
+
+    <div class="px-4 py-3 border-t border-slate-800 flex items-center justify-between">
+      <button (click)="logout()" class="text-slate-400 hover:text-white text-xs">
+        Log out
+      </button>
+    </div>
+  </aside>
+
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="flex items-center justify-between bg-white border-b border-gray-200 px-4 py-3 gap-4">
+      <div class="flex items-center gap-3">
+        <button class="md:hidden text-gray-600 text-xl" (click)="toggleMobileMenu()">☰</button>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-blue-100"></div>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto">
+      <router-outlet />
+    </main>
+  </div>
+</div>

@@ -1,7 +1,7 @@
-export interface RiskClassification {
-  id_classification: string;
+export interface RiskClassificationBand {
   label: string;
-  score_min: number;
-  score_max: number;
+  min_score: number | null;
+  max_score: number | null;
   color: string;
+  description: string | null;
 }

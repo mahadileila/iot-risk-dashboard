@@ -1,0 +1,59 @@
+<div class="p-6">
+
+  <h1 class="text-2xl font-semibold text-gray-900">
+    Risk Classifications
+  </h1>
+
+  <p class="text-gray-500 text-sm mb-6">
+    Score thresholds are fixed in the backend logic — not configurable from this interface.
+  </p>
+
+  @if (error) {
+    <p class="text-red-600 mb-4">{{ error }}</p>
+  }
+
+  @if (loading) {
+
+    <p class="text-gray-500">
+      Loading...
+    </p>
+
+  } @else {
+
+    <div class="overflow-x-auto rounded-lg border border-gray-200">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Level</th>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Min Score</th>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Max Score</th>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Color</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          @for (c of classifications; track c.label) {
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3">
+                <span
+                  class="inline-block px-2.5 py-1 rounded-full text-xs font-medium text-white"
+                  [style.background-color]="c.color"
+                >
+                  {{ c.label }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-sm text-gray-600">
+                {{ c.min_score !== null ? c.min_score : (c.description || '—') }}
+              </td>
+              <td class="px-4 py-3 text-sm text-gray-600">
+                {{ c.max_score !== null ? c.max_score : '—' }}
+              </td>
+              <td class="px-4 py-3 text-sm text-gray-500">{{ c.color }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+  }
+
+</div>

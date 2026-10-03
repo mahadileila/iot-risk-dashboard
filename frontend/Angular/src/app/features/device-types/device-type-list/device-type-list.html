@@ -1,0 +1,287 @@
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+
+    <div>
+      <h1 class="text-2xl font-semibold text-gray-900">
+        Device Types
+      </h1>
+
+      <p class="text-gray-500 text-sm">
+        Manage device type reference data
+      </p>
+    </div>
+
+    <button
+      (click)="openAddForm()"
+      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+    >
+      + Add Device Type
+    </button>
+  </div>
+
+  <input
+    type="text"
+    [(ngModel)]="searchTerm"
+    placeholder="Search device types..."
+    class="w-full max-w-sm border border-gray-300 rounded-md px-3 py-2 mb-4 text-sm"
+  />
+
+  <!-- Notification -->
+
+  <app-notification
+    [type]="notificationType"
+    [message]="notificationMessage"
+  >
+  </app-notification>
+
+  <!-- Loading -->
+
+  @if (loading) {
+
+    <p class="text-gray-500">
+      Loading...
+    </p>
+
+  } @else {
+
+    <!-- Empty state -->
+
+    @if (deviceTypes.length === 0) {
+
+      <div
+        class="border border-gray-200 rounded-lg bg-gray-50 px-6 py-10 text-center"
+      >
+
+        <h2 class="text-lg font-semibold text-gray-800 mb-2">
+          No device types found
+        </h2>
+
+        <p class="text-gray-500 text-sm mb-5">
+          There are currently no device types in the database.
+          Please create one to get started.
+        </p>
+
+        <button
+          (click)="openAddForm()"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+        >
+          + Add Device Type
+        </button>
+
+      </div>
+
+    } @else {
+
+      <!-- Device types table -->
+
+      <div
+        class="overflow-x-auto rounded-lg border border-gray-200"
+      >
+
+        <table class="min-w-full divide-y divide-gray-200">
+
+          <thead class="bg-gray-50">
+
+            <tr>
+
+              <th
+                class="px-4 py-3 text-left text-sm font-semibold text-gray-700"
+              >
+                Type Name
+              </th>
+
+              <th
+                class="px-4 py-3 text-left text-sm font-semibold text-gray-700"
+              >
+                Subsystem
+              </th>
+
+              <th
+                class="px-4 py-3 text-left text-sm font-semibold text-gray-700"
+              >
+                Data Collected
+              </th>
+
+              <th class="px-4 py-3"></th>
+
+            </tr>
+
+          </thead>
+
+          <tbody class="divide-y divide-gray-100">
+
+            @for (dt of filteredDeviceTypes; track dt.id_device_type) {
+
+              <tr class="hover:bg-gray-50">
+
+                <td class="px-4 py-3 text-sm text-gray-900">
+                  {{ dt.name }}
+                </td>
+
+                <td class="px-4 py-3 text-sm text-gray-600">
+                  {{ subsystemName(dt.id_subsystem) }}
+                </td>
+
+                <td class="px-4 py-3 text-sm text-gray-600">
+                  {{ dt.primary_data_collected || '—' }}
+                </td>
+
+                <td class="px-4 py-3 text-right text-sm">
+
+                  <button
+                    (click)="openEditForm(dt)"
+                    class="text-blue-600 hover:underline mr-3"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    (click)="deleteDeviceType(dt)"
+                    class="text-red-600 hover:underline"
+                  >
+                    Delete
+                  </button>
+
+                </td>
+
+              </tr>
+
+            }
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    }
+
+  }
+
+  <!-- ========================= -->
+  <!-- CREATE / EDIT MODAL -->
+  <!-- ========================= -->
+
+  @if (showForm) {
+
+    <div
+      class="fixed inset-0 bg-black/40 flex items-center justify-center z-40"
+    >
+
+      <div
+        class="bg-white rounded-lg p-6 w-96 shadow-lg"
+      >
+
+        <h2 class="text-lg font-semibold mb-4">
+          {{ editingId ? 'Edit Device Type' : 'New Device Type' }}
+        </h2>
+
+        <label class="block text-sm text-gray-600 mb-1">
+          Name
+        </label>
+
+        <input
+          [(ngModel)]="formName"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="e.g. Smart Thermostat"
+        />
+
+        <label class="block text-sm text-gray-600 mb-1">
+          Subsystem
+        </label>
+
+        <select
+          [(ngModel)]="formSubsystemId"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="" disabled>Select a subsystem</option>
+          @for (s of subsystems; track s.id_subsystem) {
+            <option [value]="s.id_subsystem">{{ s.name }}</option>
+          }
+        </select>
+
+        <label class="block text-sm text-gray-600 mb-1">
+          Primary Data Collected
+        </label>
+
+        <input
+          [(ngModel)]="formPrimaryData"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="e.g. Temperature, humidity"
+          (keyup.enter)="saveDeviceType()"
+        />
+
+        <div class="flex justify-end gap-2">
+
+          <button
+            (click)="cancelForm()"
+            class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
+          >
+            Cancel
+          </button>
+
+          <button
+            (click)="saveDeviceType()"
+            class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Save
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  }
+
+  <!-- ========================= -->
+  <!-- DELETE CONFIRMATION MODAL -->
+  <!-- ========================= -->
+
+  @if (showDeleteForm && deviceTypeToDelete) {
+
+    <div
+      class="fixed inset-0 bg-black/40 flex items-center justify-center z-40"
+    >
+
+      <div
+        class="bg-white rounded-lg p-6 w-96 shadow-lg"
+      >
+
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+          Delete Device Type
+        </h2>
+
+        <p class="text-sm text-gray-600 mb-2">
+          Are you sure you want to delete this device type?
+        </p>
+
+        <p class="text-sm font-medium text-gray-900 mb-6">
+          "{{ deviceTypeToDelete.name }}"
+        </p>
+
+        <div class="flex justify-end gap-2">
+
+          <button
+            (click)="cancelDelete()"
+            class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
+          >
+            Cancel
+          </button>
+
+          <button
+            (click)="confirmDelete()"
+            class="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Delete
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  }
+</div>

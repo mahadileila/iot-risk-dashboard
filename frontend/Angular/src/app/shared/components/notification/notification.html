@@ -1,0 +1,11 @@
+@if (type && message) {
+  <div
+    class="rounded-md px-4 py-3 mb-4 text-sm flex items-center justify-between"
+    [class.bg-red-50]="type === 'error'"
+    [class.text-red-700]="type === 'error'"
+    [class.bg-green-50]="type === 'success'"
+    [class.text-green-700]="type === 'success'"
+  >
+    {{ message }}
+  </div>
+}

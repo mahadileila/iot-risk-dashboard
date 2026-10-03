@@ -1,0 +1,109 @@
+<div class="p-6">
+
+  <h1 class="text-2xl font-semibold text-gray-900">
+    Risk Factors
+  </h1>
+
+  <p class="text-gray-500 text-sm mb-6">
+    The 7 privacy risk factors used to score each collection instance, grouped by Impact and Likelihood.
+    Each factor is rated from 0 (lowest risk) to 4 (highest risk).
+  </p>
+
+  @if (error) {
+    <p class="text-red-600 mb-4">{{ error }}</p>
+  }
+
+  @if (loading) {
+
+    <p class="text-gray-500">
+      Loading...
+    </p>
+
+  } @else {
+
+    <div class="mb-8">
+
+      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Impact Factors</p>
+
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 w-48">Factor</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">What it measures</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            @for (f of impactFactors; track f.id_factor) {
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm font-medium text-gray-900 align-top">{{ f.name }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">
+                  @switch (f.name) {
+                    @case ('Data type') {
+                      Nature of the data collected — from purely environmental (e.g. temperature) to identity/biometric (e.g. face, fingerprint).
+                    }
+                    @case ('Sensitivity') {
+                      How much the data can reveal about a person's habits or private life, from low inferential value to intimate details.
+                    }
+                    @case ('Identifiability') {
+                      Whether the data can be linked to a specific individual, from unlinkable to directly and reliably identifying.
+                    }
+                    @case ('Location tracking') {
+                      Spatial precision of the data captured, from no spatial information to precise and continuous location.
+                    }
+                    @default {
+                      Part of the Impact group in the risk scoring model.
+                    }
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <div>
+
+      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Likelihood Factors</p>
+
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 w-48">Factor</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">What it measures</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            @for (f of likelihoodFactors; track f.id_factor) {
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm font-medium text-gray-900 align-top">{{ f.name }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">
+                  @switch (f.name) {
+                    @case ('Frequency of collection') {
+                      How often the data is captured, from occasional/rare events to continuous, real-time collection.
+                    }
+                    @case ('Access control') {
+                      Who can access the collected data, from a very limited set of key personnel to broad, weakly restricted access.
+                    }
+                    @case ('Data sharing') {
+                      Whether the data is shared beyond the collecting system, from not shared to shared with an external third party.
+                    }
+                    @default {
+                      Part of the Likelihood group in the risk scoring model.
+                    }
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  }
+
+</div>
