@@ -16,6 +16,10 @@ Each instance is rated on 7 privacy factors, split into two groups:
 
 - **Impact**: Data type, Sensitivity, Identifiability, Location tracking
 - **Likelihood**: Frequency, Access control, Data sharing
+```
+Score(instance) = (mean(Impact) × mean(Likelihood) / 16) × 100
+Score(device)   = MAX of its instance scores
+```
 
 Each factor gets a 0–4 rating from a fixed rubric, derived from 6 raw attributes of the data stream. In real life these would come from an external governance system; here they're simulated, but the scoring logic itself is real.
 Score(instance) = (mean(Impact) × mean(Likelihood) / 16) × 100
@@ -61,4 +65,4 @@ docker compose exec backend python seed_score_history.py
 
 Then open `http://localhost:4200` and log in with your `.env` admin credentials.
 ---
-Built by Leila Mahadi — research internship at UNITEN 🎓
+Built by Leila Mahadi, research internship at UNITEN 🎓
