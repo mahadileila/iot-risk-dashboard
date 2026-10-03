@@ -1,90 +1,202 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { Notification, NotificationType } from '../../../shared/components/notification/notification';
 import { DeviceService } from '../../../core/services/device.service';
+import { DeviceTypeService } from '../../../core/services/device-type.service';
 import { Device } from '../../../core/models/device.model';
-import { DeviceRiskScore } from '../../../core/models/risk-score.model';
-import { forkJoin } from 'rxjs';
-
-interface DeviceWithRisk {
-  device: Device;
-  risk: DeviceRiskScore | null;
-}
+import { DeviceType } from '../../../core/models/device-type.model';
 
 @Component({
   selector: 'app-device-list',
   standalone: true,
-  imports: [CommonModule, TableModule, TagModule],
-  templateUrl: './device-list.html',
-  styleUrl: './device-list.scss'
+  imports: [CommonModule, FormsModule, RouterLink, Notification],
+  templateUrl: './device-list.html'
 })
 export class DeviceList implements OnInit {
-  devicesWithRisk: DeviceWithRisk[] = [];
+  devices: Device[] = [];
+  deviceTypes: DeviceType[] = [];
+  searchTerm = '';
   loading = true;
-  error: string | null = null;
+
+  notificationType: NotificationType = null;
+  notificationMessage: string | null = null;
+
+  showForm = false;
+  editingId: string | null = null;
+  formName = '';
+  formDeviceTypeId = '';
+
+  showDeleteForm = false;
+  deviceToDelete: Device | null = null;
 
   constructor(
     private deviceService: DeviceService,
+    private deviceTypeService: DeviceTypeService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
+    this.loadData();
+  }
+
+  get filteredDevices(): Device[] {
+    if (!this.searchTerm.trim()) return this.devices;
+    const term = this.searchTerm.toLowerCase();
+    return this.devices.filter(d => d.name.toLowerCase().includes(term));
+  }
+
+  deviceTypeName(id: string): string {
+    return this.deviceTypes.find(dt => dt.id_device_type === id)?.name ?? '—';
+  }
+
+  private showNotification(type: NotificationType, message: string) {
+    this.notificationType = type;
+    this.notificationMessage = message;
+    this.cdr.detectChanges();
+
+    setTimeout(() => {
+      this.notificationType = null;
+      this.notificationMessage = null;
+      this.cdr.detectChanges();
+    }, 4000);
+  }
+
+  loadData() {
+    this.loading = true;
     this.deviceService.getDevices().subscribe({
       next: (devices) => {
-        this.loadRiskScores(devices);
+        this.devices = devices;
+        this.deviceTypeService.getDeviceTypes().subscribe({
+          next: (types) => {
+            this.deviceTypes = types;
+            this.loading = false;
+            this.cdr.detectChanges();
+          },
+          error: () => {
+            this.loading = false;
+            this.showNotification('error', "Unable to load device types.");
+          }
+        });
       },
-      error: (error) => {
-        this.error = `Erreur ${error.status}: ${error.message}`;
+      error: () => {
         this.loading = false;
-        this.cdr.detectChanges();
+        this.showNotification('error', "Unable to load devices.");
       }
     });
   }
 
-  private loadRiskScores(devices: Device[]) {
-    if (devices.length === 0) {
-      this.loading = false;
-      this.cdr.detectChanges();
+  openAddForm() {
+    this.editingId = null;
+    this.formName = '';
+    this.formDeviceTypeId = '';
+    this.showForm = true;
+  }
+
+  openEditForm(device: Device) {
+    this.editingId = device.id_device;
+    this.formName = device.name;
+    this.formDeviceTypeId = device.id_device_type;
+    this.showForm = true;
+  }
+
+  cancelForm() {
+    this.showForm = false;
+  }
+
+  saveDevice() {
+    if (!this.formName.trim() || !this.formDeviceTypeId) {
+      this.showForm = false;
+      this.showNotification('error', "Name and Device Type are required.");
       return;
     }
 
-    const riskRequests = devices.map(device =>
-      this.deviceService.getDeviceRiskScore(device.id_device)
-    );
+    const payload = {
+      name: this.formName,
+      id_device_type: this.formDeviceTypeId
+    };
 
-    forkJoin(riskRequests).subscribe({
-      next: (risks) => {
-        this.devicesWithRisk = devices.map((device, i) => ({
-          device,
-          risk: risks[i]
-        }));
+    const request = this.editingId
+      ? this.deviceService.updateDevice(this.editingId, payload)
+      : this.deviceService.createDevice(payload);
 
-        this.loading = false;
-        this.cdr.detectChanges();
+    request.subscribe({
+      next: () => {
+        this.showForm = false;
+        this.loadData();
+        this.showNotification('success', this.editingId ? "Device updated." : "Device created.");
       },
       error: () => {
-        this.devicesWithRisk = devices.map(device => ({
-          device,
-          risk: null
-        }));
+        this.showForm = false;
+        this.showNotification('error', "Error while saving.");
+      }
+    });
+  }
 
-        this.loading = false;
+  deleteDevice(device: Device) {
+    this.deviceToDelete = device;
+    this.showDeleteForm = true;
+  }
+
+  cancelDelete() {
+    this.showDeleteForm = false;
+    this.deviceToDelete = null;
+  }
+
+  confirmDelete() {
+    if (!this.deviceToDelete) return;
+
+    const target = this.deviceToDelete;
+
+    this.deviceService.deleteDevice(target.id_device).subscribe({
+      next: () => {
+        this.showDeleteForm = false;
+        this.deviceToDelete = null;
+        this.loadData();
+        this.showNotification('success', `"${target.name}" deleted.`);
+      },
+      error: () => {
+        this.showDeleteForm = false;
+        this.deviceToDelete = null;
+        this.showNotification('error', "Error while deleting.");
         this.cdr.detectChanges();
       }
     });
   }
 
-  getSeverity(label: string): 'success' | 'warn' | 'danger' {
-    switch (label) {
-      case 'Low':
-        return 'success';
-      case 'Medium':
-        return 'warn';
-      case 'High':
-        return 'danger';
-      default:
-        return 'warn';
-    }
+  exportToCsv() {
+    const headers = ['Device Name', 'Type', 'Subsystem', 'Risk Score', 'Level'];
+
+    const rows = this.filteredDevices.map(d => [
+      d.name,
+      d.device_type_name || '',
+      d.subsystem_name || '',
+      d.active_instances_count > 0 ? d.normalized_score.toString() : '',
+      d.active_instances_count > 0 ? d.classification.label : 'No Risk',
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => this.escapeCsvCell(cell)).join(','))
+      .join('\n');
+
+    // Prepend a UTF-8 BOM so Excel opens accented characters correctly
+    // instead of showing garbled text.
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `devices-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private escapeCsvCell(value: string): string {
+    // Wrap in quotes and escape any embedded quotes, so names/values
+    // containing commas or quotes don't break the CSV structure.
+    const escaped = value.replace(/"/g, '""');
+    return `"${escaped}"`;
   }
 }
+
