@@ -1,31 +1,24 @@
 # Python
-**/__pycache__/
-**/*.py[cod]
-**/venv/
-**/.venv/
+venv/
+__pycache__/
+*.pyc
+backend/instance/
 
-# Environment variables
+# Secrets
 .env
-.env.*
-!.env.example
+backend/.env
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
 
 # Database
-**/*.db
-**/*.sqlite
-**/*.sqlite3
+*.db
+*.sqlite
 
-# Angular
-**/node_modules/
-**/dist/
-**/.angular/
-**/coverage/
-
-# VS Code
-.vscode/
-
-# Docker
-*.log
-
-# OS
+# IDE / OS
+.vscode/*
+!.vscode/settings.json
 .DS_Store
 Thumbs.db
