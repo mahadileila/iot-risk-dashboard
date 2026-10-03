@@ -31,8 +31,7 @@
               }
             ],
             "styles": [
-              "src/styles.scss",
-              "primeicons/primeicons.css"
+              "src/styles.scss"
             ]
           },
           "configurations": {
