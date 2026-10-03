@@ -1,65 +1,115 @@
 from app import create_app, db
-from app.models import RiskFactor, RiskClassification
+from app.models import RiskFactor, FactorGroup, BmsSubsystem, DeviceType
 
 """
-Purpose:
-    One-off script that populates the two reference tables required by the
-    risk scoring model: RiskFactor (the 7 factors from the conference paper,
-    each with its weight) and RiskClassification (the 3 score bands: Low,
-    Medium, High, with their thresholds and display color).
+Purpose: One-time script to populate reference/configuration tables:
+FactorGroup, RiskFactor (grounded in Section 3.2/3.3 of the conference
+paper), and BmsSubsystem + DeviceType (grounded in Figure 3, "Table of
+smart building devices by BMS subsystem").
 
-    These tables are configuration data for the scoring model itself, not
-    user-created content, so they are not exposed through a POST route in
-    the dashboard — this script is the only way they get created.
+Subsystems and device types are get-or-create by name, so re-running
+this script never duplicates entries you already created manually
+through the UI (e.g. an existing "HVAC" subsystem is reused, not
+recreated).
 
-Docker command to run it (container must already be up via `docker compose up`):
+How to run it:
     docker compose exec backend python seed_reference_data.py
-
-    `docker compose exec` runs a one-off command inside the already-running
-    `backend` container, using the same Flask app context (config, DB
-    connection) the running app uses — required here because the script
-    calls create_app().
-
-When to use it:
-    - Once, right after the initial `flask db upgrade` that creates the
-      database schema for the first time.
-    - Again any time the database is reset or recreated from scratch, e.g.
-      after `docker compose down -v` (which also removes volumes, and
-      therefore the SQLite data).
-    Safe to re-run at any time: the count() == 0 checks below make it
-    idempotent, so re-running it on a database that's already seeded does
-    nothing instead of creating duplicates.
 """
 
+GROUPS = ["impact", "likelihood"]
+
+# (name, group_name) — Section 3.3.3 of the paper
 FACTORS = [
-    ("Data type", "Nature of the data collected (environmental to biometric)"),
-    ("Sensitivity", "Inferential value on occupant activity"),
-    ("Identifiability", "Ability to link data to an individual"),
-    ("Location tracking", "Spatial precision of captured data"),
-    ("Frequency of collection", "How often data is captured"),
-    ("Access control", "Who can access the collected data"),
-    ("Data sharing", "Whether data is shared beyond the collecting system"),
+    ("Data type", "impact"),
+    ("Sensitivity", "impact"),
+    ("Identifiability", "impact"),
+    ("Location tracking", "impact"),
+    ("Frequency of collection", "likelihood"),
+    ("Access control", "likelihood"),
+    ("Data sharing", "likelihood"),
 ]
 
-CLASSIFICATIONS = [
-    ("Low", 0, 33, "green"),
-    ("Medium", 34, 66, "orange"),
-    ("High", 67, 100, "red"),
+# (subsystem_name, [(device_type_name, primary_data_collected), ...]) — Figure 3
+SUBSYSTEMS = [
+    ("HVAC", [
+        ("Central thermostat", "Temperature, humidity, inferred presence"),
+        ("Temperature/humidity sensor", "Temperature, humidity"),
+        ("Air handling unit sensor", "Temperature, humidity, inferred presence"),
+    ]),
+    ("Lighting", [
+        ("Occupancy-linked light sensor", "Presence, zone occupancy"),
+        ("Automated dimming controller", "Presence, zone occupancy"),
+    ]),
+    ("Security", [
+        ("CCTV camera", "Video/image"),
+        ("RFID badge reader", "Identity, access timestamps"),
+        ("Smart lock", "Access timestamps"),
+        ("Intrusion detector", "Environmental data, event location"),
+    ]),
+    ("Fire & life safety", [
+        ("Connected smoke/heat detector", "Environmental data, event location"),
+        ("Gas sensor", "Environmental data, event location"),
+    ]),
+    ("Electrical", [
+        ("Smart energy meter", "Electricity consumption (high frequency)"),
+        ("Zone-level consumption sensor", "Electricity consumption (high frequency)"),
+    ]),
+    ("Water management", [
+        ("Smart water leak detector", "Water consumption"),
+        ("Water meter", "Water consumption"),
+    ]),
+    ("Parking", [
+        ("Parking occupancy sensor", "Vehicle presence"),
+        ("LPR camera", "Vehicle presence, plate identifier"),
+    ]),
+    ("Occupancy (cross-subsystem)", [
+        ("PIR sensor", "Presence, indoor localisation"),
+        ("People-counting sensor", "Presence, indoor localisation"),
+    ]),
 ]
+
 
 def seed():
     app = create_app()
     with app.app_context():
-        if RiskFactor.query.count() == 0:
-            for name, description in FACTORS:
-                db.session.add(RiskFactor(name=name))
+        # ---- Factor groups + risk factors ----
+        group_map = {}
+        for name in GROUPS:
+            group = FactorGroup.query.filter_by(name=name).first()
+            if group is None:
+                group = FactorGroup(name=name)
+                db.session.add(group)
+                db.session.flush()
+            group_map[name] = group.id_factor_group
 
-        if RiskClassification.query.count() == 0:
-            for label, low, high, color in CLASSIFICATIONS:
-                db.session.add(RiskClassification(label=label, score_min=low, score_max=high, color=color))
+        for name, group_name in FACTORS:
+            existing = RiskFactor.query.filter_by(name=name, is_deleted=False).first()
+            if existing is None:
+                db.session.add(RiskFactor(name=name, id_factor_group=group_map[group_name]))
+
+        # ---- BMS subsystems + device types (get-or-create by name) ----
+        for subsystem_name, device_types in SUBSYSTEMS:
+            subsystem = BmsSubsystem.query.filter_by(name=subsystem_name, is_deleted=False).first()
+            if subsystem is None:
+                subsystem = BmsSubsystem(name=subsystem_name, is_deleted=False)
+                db.session.add(subsystem)
+                db.session.flush()
+
+            for type_name, primary_data in device_types:
+                existing_type = DeviceType.query.filter_by(
+                    name=type_name, id_subsystem=subsystem.id_subsystem, is_deleted=False
+                ).first()
+                if existing_type is None:
+                    db.session.add(DeviceType(
+                        name=type_name,
+                        primary_data_collected=primary_data,
+                        id_subsystem=subsystem.id_subsystem,
+                        is_deleted=False
+                    ))
 
         db.session.commit()
-        print("Reference data seeded.")
+        print("Reference data seeded (factor groups, risk factors, BMS subsystems, device types).")
+
 
 if __name__ == "__main__":
     seed()

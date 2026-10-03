@@ -7,27 +7,30 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 
+class FactorGroup(db.Model):
+    __tablename__ = "FACTOR_GROUP"
+
+    id_factor_group = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    name = db.Column(db.String(50), nullable=False)  # 'impact' ou 'likelihood'
+
+    factors = db.relationship("RiskFactor", backref="group", lazy=True)
+
+    def __repr__(self):
+        return f"<FactorGroup {self.name}>"
+
+
 class RiskFactor(db.Model):
     __tablename__ = "RISK_FACTOR"
 
     id_factor = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(50))
+    is_deleted = db.Column(db.Boolean, nullable=False, default=False)
+    id_factor_group = db.Column(
+        db.String(36), db.ForeignKey("FACTOR_GROUP.id_factor_group"), nullable=False
+    )
 
     def __repr__(self):
         return f"<RiskFactor {self.name}>"
-
-
-class RiskClassification(db.Model):
-    __tablename__ = "RISK_CLASSIFICATION"
-
-    id_classification = db.Column(db.String(36), primary_key=True, default=generate_uuid)
-    label = db.Column(db.String(50))
-    score_min = db.Column(db.Integer)
-    score_max = db.Column(db.Integer)
-    color = db.Column(db.String(50))
-
-    def __repr__(self):
-        return f"<RiskClassification {self.label}>"
 
 
 class BmsSubsystem(db.Model):
@@ -35,6 +38,7 @@ class BmsSubsystem(db.Model):
 
     id_subsystem = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(50))
+    is_deleted = db.Column(db.Boolean, nullable=False, default=False)
 
     device_types = db.relationship("DeviceType", backref="subsystem", lazy=True)
 
@@ -48,6 +52,7 @@ class DeviceType(db.Model):
     id_device_type = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(50))
     primary_data_collected = db.Column(db.String(50))
+    is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     id_subsystem = db.Column(
         db.String(36), db.ForeignKey("BMS_SUBSYSTEM.id_subsystem"), nullable=False
     )
@@ -64,25 +69,46 @@ class Device(db.Model):
     id_device = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     id_device_type = db.Column(
         db.String(36), db.ForeignKey("DEVICE_TYPE.id_device_type"), nullable=False
     )
 
-    factor_scores = db.relationship("DeviceFactorScore", backref="device", lazy=True)
+    instances = db.relationship("CollectionInstance", backref="device", lazy=True)
     score_history = db.relationship("RiskScoreHistory", backref="device", lazy=True)
-    data_samples = db.relationship("DeviceDataSample", backref="device", lazy=True)
-
+    
     def __repr__(self):
         return f"<Device {self.name}>"
 
 
-class DeviceFactorScore(db.Model):
-    __tablename__ = "DEVICE_FACTOR_SCORE"
+class CollectionInstance(db.Model):
+    __tablename__ = "COLLECTION_INSTANCE"
 
-    id_device_factore_score = db.Column(db.String(36), primary_key=True, default=generate_uuid)
-    rating = db.Column(db.Integer)
-    rated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    id_instance = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    data_description = db.Column(db.String(50))
     id_device = db.Column(db.String(36), db.ForeignKey("DEVICE.id_device"), nullable=False)
+
+    data_nature = db.Column(db.String(30), nullable=False)
+    identifiability_level = db.Column(db.String(30), nullable=False)
+    location_scope = db.Column(db.String(30), nullable=False)
+    collection_frequency = db.Column(db.String(30), nullable=False)
+    access_scope = db.Column(db.String(30), nullable=False)
+    sharing_scope = db.Column(db.String(30), nullable=False)
+
+    factor_scores = db.relationship("InstanceFactorScore", backref="instance", lazy=True)
+    data_samples = db.relationship("DeviceDataSample", backref="instance", lazy=True)
+
+    def __repr__(self):
+        return f"<CollectionInstance {self.data_description}>"
+
+class InstanceFactorScore(db.Model):
+    __tablename__ = "INSTANCE_FACTOR_SCORE"
+
+    id_instance_factor_score = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    rating = db.Column(db.Integer)  # 0 à 4
+    id_instance = db.Column(
+        db.String(36), db.ForeignKey("COLLECTION_INSTANCE.id_instance"), nullable=False
+    )
     id_factor = db.Column(
         db.String(36), db.ForeignKey("RISK_FACTOR.id_factor"), nullable=False
     )
@@ -90,25 +116,7 @@ class DeviceFactorScore(db.Model):
     factor = db.relationship("RiskFactor")
 
     def __repr__(self):
-        return f"<DeviceFactorScore {self.rating}>"
-
-
-class RiskScoreHistory(db.Model):
-    __tablename__ = "RISK_SCORE_HISTORY"
-
-    id_history = db.Column(db.String(36), primary_key=True, default=generate_uuid)
-    raw_score = db.Column(db.Numeric(15, 2))
-    normalized_score = db.Column(db.Numeric(15, 2))
-    computed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    id_device = db.Column(db.String(36), db.ForeignKey("DEVICE.id_device"), nullable=False)
-    id_classification = db.Column(
-        db.String(36), db.ForeignKey("RISK_CLASSIFICATION.id_classification"), nullable=False
-    )
-
-    classification = db.relationship("RiskClassification")
-
-    def __repr__(self):
-        return f"<RiskScoreHistory {self.normalized_score}>"
+        return f"<InstanceFactorScore {self.rating}>"
 
 
 class DeviceDataSample(db.Model):
@@ -117,7 +125,21 @@ class DeviceDataSample(db.Model):
     id_sample = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     captured_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     data_value = db.Column(db.String(50))
-    id_device = db.Column(db.String(36), db.ForeignKey("DEVICE.id_device"), nullable=False)
+    id_instance = db.Column(
+        db.String(36), db.ForeignKey("COLLECTION_INSTANCE.id_instance"), nullable=False
+    )
 
     def __repr__(self):
         return f"<DeviceDataSample {self.data_value}>"
+
+class RiskScoreHistory(db.Model):
+    __tablename__ = "RISK_SCORE_HISTORY"
+
+    id_history = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    score = db.Column(db.Numeric(5, 2), nullable=False)
+    classification = db.Column(db.String(20), nullable=False)
+    computed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    id_device = db.Column(db.String(36), db.ForeignKey("DEVICE.id_device"), nullable=False)
+
+    def __repr__(self):
+        return f"<RiskScoreHistory {self.score} @ {self.computed_at}>"
