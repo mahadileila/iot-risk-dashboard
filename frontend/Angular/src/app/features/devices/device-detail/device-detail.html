@@ -1,0 +1,208 @@
+<div class="p-6">
+
+  <button (click)="goBack()" class="text-sm text-blue-600 hover:underline">
+    ← Back
+  </button>
+
+  @if (loading) {
+
+    <p class="text-gray-500 mt-4">
+      Loading...
+    </p>
+
+  } @else if (error) {
+
+    <p class="text-red-600 mt-4">
+      {{ error }}
+    </p>
+
+  } @else if (device) {
+
+    <div class="mt-4 mb-6">
+      <h1 class="text-2xl font-semibold text-gray-900">
+        {{ device.name }}
+      </h1>
+
+      <p class="text-gray-500 text-sm">
+        {{ device.device_type_name }} · {{ device.subsystem_name }} ·
+        Score {{ device.active_instances_count > 0 ? device.normalized_score + '/100' : 'No Risk' }}
+      </p>
+    </div>
+
+    <div class="border-b border-gray-200 mb-6 flex gap-6 text-sm">
+
+      <button
+        (click)="setTab('general')"
+        class="pb-2 border-b-2"
+        [class.border-blue-600]="activeTab === 'general'"
+        [class.text-blue-600]="activeTab === 'general'"
+        [class.border-transparent]="activeTab !== 'general'"
+        [class.text-gray-500]="activeTab !== 'general'"
+      >
+        General Info
+      </button>
+
+      <button
+        (click)="setTab('instances')"
+        class="pb-2 border-b-2"
+        [class.border-blue-600]="activeTab === 'instances'"
+        [class.text-blue-600]="activeTab === 'instances'"
+        [class.border-transparent]="activeTab !== 'instances'"
+        [class.text-gray-500]="activeTab !== 'instances'"
+      >
+        Collection Instances
+      </button>
+
+      <button
+        (click)="setTab('samples')"
+        class="pb-2 border-b-2"
+        [class.border-blue-600]="activeTab === 'samples'"
+        [class.text-blue-600]="activeTab === 'samples'"
+        [class.border-transparent]="activeTab !== 'samples'"
+        [class.text-gray-500]="activeTab !== 'samples'"
+      >
+        Data Samples
+      </button>
+
+    </div>
+
+    @if (activeTab === 'general') {
+
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+
+        <h2 class="font-semibold text-gray-900 mb-4">
+          General Information
+        </h2>
+
+        <div class="grid grid-cols-2 gap-4">
+
+          <div>
+            <p class="text-xs text-gray-500">Name</p>
+            <p class="text-sm text-gray-900">{{ device.name }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs text-gray-500">Device Type</p>
+            <p class="text-sm text-gray-900">{{ device.device_type_name || '—' }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs text-gray-500">Subsystem</p>
+            <p class="text-sm text-gray-900">{{ device.subsystem_name || '—' }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs text-gray-500">Created On</p>
+            <p class="text-sm text-gray-900">{{ device.created_at | date:'yyyy-MM-dd' }}</p>
+          </div>
+
+        </div>
+
+      </div>
+
+    }
+
+    @if (activeTab === 'instances') {
+
+      @if (instances.length === 0) {
+
+        <div class="border border-gray-200 rounded-lg bg-gray-50 px-6 py-10 text-center">
+          <p class="text-gray-500 text-sm">
+            No collection instances for this device yet.
+          </p>
+        </div>
+
+      } @else {
+
+        <div class="space-y-3">
+
+          @for (instance of instances; track instance.id_instance) {
+
+            <div class="border border-gray-200 rounded-lg p-4">
+
+              <div class="flex justify-between items-start mb-2">
+
+                <span class="text-sm font-medium text-gray-900">
+                  {{ instance.data_description || 'Unnamed instance' }}
+                </span>
+
+                @if (instance.classification) {
+                  <span
+                    class="inline-block px-2.5 py-1 rounded-full text-xs font-medium text-white"
+                    [style.background-color]="instance.classification.color"
+                  >
+                    {{ instance.classification.label }} · {{ instance.normalized_score }}
+                  </span>
+                } @else {
+                  <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                    Not scored
+                  </span>
+                }
+
+              </div>
+
+              <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 mb-3">
+                <p><span class="text-gray-400">Data nature:</span> {{ formatAttribute(instance.raw_attributes.data_nature) }}</p>
+                <p><span class="text-gray-400">Identifiability:</span> {{ formatAttribute(instance.raw_attributes.identifiability_level) }}</p>
+                <p><span class="text-gray-400">Location scope:</span> {{ formatAttribute(instance.raw_attributes.location_scope) }}</p>
+                <p><span class="text-gray-400">Frequency:</span> {{ formatAttribute(instance.raw_attributes.collection_frequency) }}</p>
+                <p><span class="text-gray-400">Access scope:</span> {{ formatAttribute(instance.raw_attributes.access_scope) }}</p>
+                <p><span class="text-gray-400">Sharing scope:</span> {{ formatAttribute(instance.raw_attributes.sharing_scope) }}</p>
+              </div>
+
+              @if (instance.factor_ratings.length > 0) {
+                <p class="text-xs text-gray-500 border-t border-gray-100 pt-2">
+                  @for (r of instance.factor_ratings; track r.factor_name) {
+                    {{ r.factor_name }}: {{ r.rating }}&nbsp;
+                  }
+                </p>
+              }
+
+            </div>
+
+          }
+        </div>
+
+      }
+
+    }
+
+    @if (activeTab === 'samples') {
+      @if (allSamples.length === 0) {
+
+        <div class="border border-gray-200 rounded-lg bg-gray-50 px-6 py-10 text-center">
+          <p class="text-gray-500 text-sm">
+            No data samples for this device yet.
+          </p>
+        </div>
+
+      } @else {
+
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Instance</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Value</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Captured At</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              @for (sample of allSamples; track sample.captured_at + sample.data_value) {
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-3 text-sm text-gray-600">{{ sample.instance_description }}</td>
+                  <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ sample.data_value }}</td>
+                  <td class="px-4 py-3 text-sm text-gray-500">{{ sample.captured_at | date:'short' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+      }
+
+    }
+
+  }
+
+</div>
