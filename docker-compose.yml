@@ -3,7 +3,7 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: dashboard-backend
+    container_name: riskguard-backend
     ports:
       - "5000:5000"
     env_file:
@@ -16,7 +16,7 @@ services:
   #   build:
   #     context: ./frontend/Angular
   #     dockerfile: Dockerfile.dev
-  #   container_name: dashboard-frontend
+  #   container_name: riskguard-frontend
   #   ports:
   #     - "4200:4200"
   #   volumes:
