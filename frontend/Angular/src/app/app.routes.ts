@@ -22,7 +22,7 @@ export const routes: Routes = [
       { path: 'devices', component: DeviceList, data: { breadcrumb: 'Devices' } },
       { path: 'devices/:id', component: DeviceDetail, data: { breadcrumb: 'Device Detail' } },
       { path: 'device-types', component: DeviceTypeList, data: { breadcrumb: 'Device Types' } },
-      { path: 'bms-subsystems', component: BmsSubsystemList, data: { breadcrumb: 'BMS Subsystems' } },
+      { path: 'subsystems', component: BmsSubsystemList, data: { breadcrumb: 'BMS Subsystems' } },
       { path: 'risk-factors', component: RiskFactorList, data: { breadcrumb: 'Risk Factors' } },
       { path: 'risk-classifications', component: RiskClassificationList, data: { breadcrumb: 'Risk Classifications' } },
     ]
